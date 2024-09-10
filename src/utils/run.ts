@@ -28,6 +28,9 @@ export async function run(options: Options): Promise<RunResult> {
   await Promise.all(
     inputFiles.map(async (inputFile) => {
       return limit(async () => {
+        if (!path.extname(inputFile)) {
+          return;
+        }
         const inputFileFullPath = path.join(options.inputDir, inputFile);
         const outputFileFullPath = changeFileExtension(
           path.join(options.outputDir, inputFile)
