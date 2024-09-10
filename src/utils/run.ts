@@ -1,6 +1,6 @@
 import path from "path";
+import pLimit from "p-limit";
 
-import { batch } from "@/utils/batch";
 import { changeFileExtension } from "@/utils/changeFileExtension";
 import { compress } from "@/utils/compress";
 import { prettyPrintBytes } from "@/utils/prettyPrintBytes";
@@ -22,10 +22,12 @@ export async function run(options: Options): Promise<RunResult> {
   let totalOutputSize = 0;
   const failedFiles: string[] = [];
 
+  const limit = pLimit(options.batchSize);
+
   // Compress the images in batches
-  for (const files of batch(inputFiles, options.batchSize)) {
-    await Promise.all(
-      files.map(async (inputFile) => {
+  await Promise.all(
+    inputFiles.map(async (inputFile) => {
+      return limit(async () => {
         const inputFileFullPath = path.join(options.inputDir, inputFile);
         const outputFileFullPath = changeFileExtension(
           path.join(options.outputDir, inputFile)
@@ -53,9 +55,9 @@ export async function run(options: Options): Promise<RunResult> {
         console.log(
           `Compressed ${result.file}. Original: ${inputSize}, Compressed: ${outputSize} (${percent}%)`
         );
-      })
-    );
-  }
+      });
+    })
+  );
 
   return {
     numSuccessful,
